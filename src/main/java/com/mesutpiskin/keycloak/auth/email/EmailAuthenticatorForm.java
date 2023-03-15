@@ -5,6 +5,7 @@ import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.AuthenticationFlowException;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.common.util.KeycloakUriBuilder;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.events.Errors;
@@ -13,6 +14,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.services.messages.Messages;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -27,7 +29,8 @@ public class EmailAuthenticatorForm implements Authenticator {
 
     static final String ID = "demo-email-code-form";
 
-    public static final String EMAIL_CODE = "emailCode";
+    public static final String AUTH_NOTE_EMAIL_CODE = "emailCode";
+    public static final String AUTH_NOTE_URL_KEY = "email-authenticator-url-key";
 
     private final KeycloakSession session;
 
@@ -37,11 +40,20 @@ public class EmailAuthenticatorForm implements Authenticator {
 
     @Override
     public void authenticate(AuthenticationFlowContext context) {
+        String receivedUrlKey = context.getHttpRequest().getUri().getQueryParameters().getFirst("key");
+        if (receivedUrlKey != null) {
+            String expectedUrlKey = context.getAuthenticationSession().getAuthNote(AUTH_NOTE_URL_KEY);
+            context.getAuthenticationSession().removeAuthNote(AUTH_NOTE_URL_KEY);
+            if (receivedUrlKey.equals(expectedUrlKey)) {
+                context.success();
+                return;
+            }
+        }
+
         challenge(context, null);
     }
 
     private void challenge(AuthenticationFlowContext context, FormMessage errorMessage) {
-
         generateAndSendEmailCode(context);
 
         LoginFormsProvider form = context.form().setExecution(context.getExecution().getId());
@@ -54,15 +66,17 @@ public class EmailAuthenticatorForm implements Authenticator {
     }
 
     private void generateAndSendEmailCode(AuthenticationFlowContext context) {
-
-        if (context.getAuthenticationSession().getAuthNote(EMAIL_CODE) != null) {
+        if (context.getAuthenticationSession().getAuthNote(AUTH_NOTE_EMAIL_CODE) != null) {
             // skip sending email code
             return;
         }
 
-        int emailCode = ThreadLocalRandom.current().nextInt(99999999);
-        sendEmailWithCode(context.getRealm(), context.getUser(), String.valueOf(emailCode));
-        context.getAuthenticationSession().setAuthNote(EMAIL_CODE, Integer.toString(emailCode));
+        int emailCode = ThreadLocalRandom.current().nextInt(9999);
+        String urlKey = KeycloakModelUtils.generateId();
+        String url = KeycloakUriBuilder.fromUri(context.getRefreshExecutionUrl()).queryParam("key", urlKey).build().toString();
+        sendEmailWithCode(context.getRealm(), context.getUser(), String.valueOf(emailCode), url);
+        context.getAuthenticationSession().setAuthNote(AUTH_NOTE_EMAIL_CODE, Integer.toString(emailCode));
+        context.getAuthenticationSession().setAuthNote(AUTH_NOTE_URL_KEY, urlKey);
     }
 
     @Override
@@ -82,7 +96,7 @@ public class EmailAuthenticatorForm implements Authenticator {
 
         boolean valid;
         try {
-            int givenEmailCode = Integer.parseInt(formData.getFirst(EMAIL_CODE));
+            int givenEmailCode = Integer.parseInt(formData.getFirst(AUTH_NOTE_EMAIL_CODE));
             valid = validateCode(context, givenEmailCode);
         } catch (NumberFormatException e) {
             valid = false;
@@ -99,11 +113,11 @@ public class EmailAuthenticatorForm implements Authenticator {
     }
 
     private void resetEmailCode(AuthenticationFlowContext context) {
-        context.getAuthenticationSession().removeAuthNote(EMAIL_CODE);
+        context.getAuthenticationSession().removeAuthNote(AUTH_NOTE_EMAIL_CODE);
     }
 
     private boolean validateCode(AuthenticationFlowContext context, int givenCode) {
-        int emailCode = Integer.parseInt(context.getAuthenticationSession().getAuthNote(EMAIL_CODE));
+        int emailCode = Integer.parseInt(context.getAuthenticationSession().getAuthNote(AUTH_NOTE_EMAIL_CODE));
         return givenCode == emailCode;
     }
 
@@ -127,7 +141,7 @@ public class EmailAuthenticatorForm implements Authenticator {
         // NOOP
     }
 
-    private void sendEmailWithCode(RealmModel realm, UserModel user, String code) {
+    private void sendEmailWithCode(RealmModel realm, UserModel user, String code, String url) {
         if (user.getEmail() == null) {
             log.warnf("Could not send access code email due to missing email. realm=%s user=%s", realm.getId(), user.getUsername());
             throw new AuthenticationFlowException(AuthenticationFlowError.INVALID_USER);
@@ -136,6 +150,7 @@ public class EmailAuthenticatorForm implements Authenticator {
         Map<String, Object> mailBodyAttributes = new HashMap<>();
         mailBodyAttributes.put("username", user.getUsername());
         mailBodyAttributes.put("code", code);
+        mailBodyAttributes.put("url", url);
 
         String realmName = realm.getDisplayName() != null ? realm.getDisplayName() : realm.getName();
         List<Object> subjectParams = List.of(realmName);
