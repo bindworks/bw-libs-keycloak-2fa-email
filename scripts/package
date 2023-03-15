@@ -9,7 +9,6 @@ cd "$SCRIPT_DIR/.." || exit
 rm -rf ./target/keycloak
 mkdir -p ./target/keycloak/providers
 cp ./target/keycloak-2fa-email-authenticator-*.jar ./target/keycloak/providers
-cp ./target/dependency/*.jar ./target/keycloak/providers
 # cp -r ./templates/* ./target/keycloak/themes/base/login/
 tar -czf ./target/keycloak-2fa-email-authenticator.tar.gz -C ./target/keycloak .
 
