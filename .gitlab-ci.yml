@@ -1,0 +1,21 @@
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+stages:
+  - build
+#  - release
+#  - deploy
+
+build:
+  cache:
+    key: maven-cache
+    paths:
+      - ${CI_PROJECT_DIR}/.m2/repository
+  image: openjdk:11-ea-jdk
+  stage: build
+  script:
+    - ./scripts/package
+  artifacts:
+    paths:
+      - ./target/keycloak-2fa-email-authenticator.tar.gz
+      - ./target/keycloak-2fa-email-authenticator*.jar
