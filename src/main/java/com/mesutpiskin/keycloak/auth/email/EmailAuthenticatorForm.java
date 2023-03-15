@@ -150,7 +150,7 @@ public class EmailAuthenticatorForm implements Authenticator {
         Map<String, Object> mailBodyAttributes = new HashMap<>();
         mailBodyAttributes.put("username", user.getUsername());
         mailBodyAttributes.put("code", code);
-        mailBodyAttributes.put("url", url);
+        mailBodyAttributes.put("keyUrl", url);
 
         String realmName = realm.getDisplayName() != null ? realm.getDisplayName() : realm.getName();
         List<Object> subjectParams = List.of(realmName);
