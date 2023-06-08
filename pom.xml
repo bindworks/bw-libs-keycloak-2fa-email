@@ -3,7 +3,7 @@
 
     <artifactId>keycloak-2fa-email-authenticator</artifactId>
     <groupId>com.mesutpiskin.keycloak</groupId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
 
@@ -81,7 +81,7 @@
         <connection>scm:git:https://gitlab.com/bindworks/libs/keycloak-2fa-email-authenticator.git</connection>
         <developerConnection>scm:git:git@gitlab.com:bindworks/libs/keycloak-2fa-email-authenticator.git</developerConnection>
         <url>https://gitlab.com/bindworks/libs/keycloak-2fa-email-authenticator/-/tree/${project.scm.tag}</url>
-        <tag>main</tag>
+        <tag>keycloak-2fa-email-authenticator-1.0.3</tag>
     </scm>
 
     <repositories>
