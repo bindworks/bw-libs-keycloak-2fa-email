@@ -96,7 +96,7 @@ public class EmailAuthenticatorForm implements Authenticator {
 
         boolean valid;
         try {
-            int givenEmailCode = Integer.parseInt(formData.getFirst(AUTH_NOTE_EMAIL_CODE));
+            int givenEmailCode = Integer.parseInt(formData.getFirst(AUTH_NOTE_EMAIL_CODE).trim());
             valid = validateCode(context, givenEmailCode);
         } catch (NumberFormatException e) {
             valid = false;
