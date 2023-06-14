@@ -21,7 +21,7 @@
 
             <input name="cancel"
                    class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonLargeClass!}"
-                   type="submit" value="${msg("doCancel")}"/>
+                   type="submit" value="${msg("doCancel")}" formnovalidate="formnovalidate" />
         </form>
     </#if>
 </@layout.registrationLayout>
